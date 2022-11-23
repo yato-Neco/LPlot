@@ -3,7 +3,7 @@
     windows_subsystem = "windows"
 )]
 
-use std::time::Duration;
+use std::{time::Duration, collections::HashMap};
 
 use lidar::ydlidarx2;
 use tauri::Manager;
@@ -11,6 +11,7 @@ use tauri::Manager;
 mod lidar;
 mod mytools;
 
+use mytools::Xtools;
 // Learn more about Tauri commands at https://tauri.app/v1/guides/features/command
 #[tauri::command]
 fn greet(name: &str) -> String {
@@ -23,10 +24,7 @@ fn main() {
         .setup(|app| {
             let app_handle = app.app_handle();
             std::thread::spawn(move || {
-                /*
-
-
-                let mut port = match serialport::new("COM3", 115200)
+                let mut port = match serialport::new("COM5", 115200)
                     .stop_bits(serialport::StopBits::One)
                     .data_bits(serialport::DataBits::Eight)
                     .timeout(Duration::from_millis(10))
@@ -35,44 +33,66 @@ fn main() {
                     Ok(p) => p,
                     Err(_) => panic!(),
                 };
-                let mut serial_buf: Vec<u8> = vec![0; 1500];
+                let mut serial_buf: Vec<u8> = vec![0; 3500];
+
+                let roun = 1;
+
+                let mut map: HashMap<String, f64> = HashMap::new();
 
                 loop {
                     match port.read(serial_buf.as_mut_slice()) {
                         Ok(t) => {
+                            let mut map_vec= Vec::new();
+
                             let mut data = serial_buf[..t].to_vec();
                             let points = ydlidarx2(&mut data);
 
-                            //slam.push(((0.0_f64,0.0_f64),points));
+                            for i in points.iter() {
+                                //println!("{}",i.0.roundf(10));
+                                map.insert(i.0.roundf(roun).to_string(), i.1);
+                            }
 
+                            //println!("{}",map.len());
+
+                            for (a, d) in map.iter() {
+                                let a = a.parse::<f64>().unwrap();
+                                let y = a.sin() * d;
+                                let x = a.cos() * d;
+                                map_vec.push((x,y))
+                            }
 
                             /*
-                            for i in points {
-                                if i.0 >= 165.0 && i.0 <= 195.0 && i.1 < 4.5 {
-                                    println!("{}度 {}cm", i.0, i.1);
-                                }
+                            for i in points.iter() {
+                                map_vec.push(((i.0.cos() * i.1),(i.0.sin() * i.1)))
                             }
                             */
+                           
+                            
+
+                            
+
+                            app_handle.emit_all("back-to-front", map_vec.clone()).unwrap();
+
                         }
 
                         Err(_) => {}
                     }
-
                 }
-                */
+
+                /*
                 let mut t = Vec::new();
-                let mut a = (0.0,0.0);
+                let mut a = (0.0, 0.0);
 
                 loop {
-
                     t.push(a);
-                    app_handle
-                        .emit_all("back-to-front", t.clone())
-                        .unwrap();
+                    app_handle.emit_all("back-to-front", t.clone()).unwrap();
 
                     a = (a.0 + 1.0, a.1 + 1.0);
                     std::thread::sleep(std::time::Duration::from_secs(1))
                 }
+                
+                */
+                
             });
 
             Ok(())

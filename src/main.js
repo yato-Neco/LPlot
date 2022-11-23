@@ -1,4 +1,3 @@
-
 const { invoke } = window.__TAURI__.tauri;
 
 let greetInputEl;
@@ -16,62 +15,55 @@ async function greet() {
 
 async function f() {
 
-  var ctx = document.getElementById('mychart-scatter').getContext('2d');;
-  let tmp_data = []
+  var ctx = document.getElementById("mychart-scatter").getContext("2d");
 
-  
-
-  await window.__TAURI__.event.listen('back-to-front', event => {
-    console.log('back-to-front', event.payload);
-    
-    tmp_data = event.payload
-    
-    var myChart = new Chart(ctx, {
-      type: 'bubble',
-      data: {
-        datasets: [{
-          label: 'Lidar',
-          data: [{x:0.0,y:0.0}],
-          backgroundColor: '#f88',
-        }],
-      },
-      options: {
-        plugins: {
-          streaming: {
-            duration: 10000,
-          },
+  var myChart = new Chart(ctx, {
+    type: "bubble",
+    data: {
+      datasets: [
+        {
+          label: "Lidar",
+          data: [],
+          backgroundColor: "#f88",
         },
-        scales: {
-          y: { 
-            min: -30, max: 30 ,
-            type: 'realtime',
-            realtime: {
-              onRefresh: function(chart) {
-    
-                chart.data.datasets.forEach(function(dataset) {
-                  event.payload.forEach(element => {
-                    dataset.data.push(
-                      { x: element[0], y: element[1] }
-                    )
-                  });
-                });
-              }
-            }
-          },
-          x: { min: -30, max: 30 },
-          
+      ],
+    },
+    options: {
+      animation: false,
+      plugins: {
+        streaming: {
+          duration: 0,
         },
       },
-    });
-
-    
+      scales: {
+        y: { min: -800, max: 800 },
+        x: { min: -800, max: 800 },
+      },
+    },
   });
 
+  await window.__TAURI__.event.listen("back-to-front", (event) => {
+    //console.log("back-to-front", event.payload);
 
+    
+
+    let tmp_data = [];
+
+    event.payload.forEach((element) => {
+      tmp_data.push({ x: element[0], y: element[1] });
+    });
+
+    myChart.data.datasets[0].data = tmp_data
+
+    myChart.update({
+      lazy: true,
+      duration: 0,
+    });
+  });
 }
 
 async function t() {
-  console.log("a")
+  console.log("a");
 }
 
 f();
